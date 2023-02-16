@@ -1,0 +1,76 @@
+services:
+  post:
+    container_name: post
+    image: norbertpedyk/post-image:varsion8
+    depends_on:
+      - postgres-post
+    environment:
+      - "USER_SERVICE_URL=http://user:8080/users/"
+      - "DB_PASSWORD=password"
+      - "DB_USERNAME=pedyk"
+      - "DB_URL=jdbc:postgresql://postgres-post:5432/posts"
+    networks:
+      - postgres
+    ports:
+      - "8081:8081"
+  user:
+    container_name: user
+    image: norbertpedyk/user-image:version1
+    depends_on:
+      - postgres-user
+    environment:
+      - "DB_PASSWORD=password"
+      - "DB_USERNAME=pedyk"
+      - "DB_URL=jdbc:postgresql://postgres-user:5432/users"
+    networks:
+      - postgres
+    ports:
+      - "8080:8080"
+  postgres-user:
+    container_name: postgres-user
+    image: postgres
+    environment:
+      POSTGRES_DB: users
+      POSTGRES_USER: pedyk
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-user:/data/postgres
+    ports:
+      - "5432:5432"
+    networks:
+      - postgres
+  postgres-post:
+    container_name: postgres-post
+    image: postgres
+    environment:
+      POSTGRES_DB: posts
+      POSTGRES_USER: pedyk
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres-post:/data/postgres
+    ports:
+      - "5433:5432"
+    networks:
+      - postgres
+  pgadmin:
+    container_name: pgadmin
+    image: dpage/pgadmin4
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-pgadmin4@pgadmin.org}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    volumes:
+      - pgadmin:/var/lib/pgadmin
+    ports:
+      - "5050:80"
+    networks:
+      - postgres
+
+networks:
+  postgres:
+    driver: bridge
+
+volumes:
+  postgres-user:
+  postgres-post:
+  pgadmin:

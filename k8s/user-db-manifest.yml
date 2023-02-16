@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-db
+  namespace: kubernetes-microservices-task2
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-db
+  template:
+    metadata:
+      labels:
+        app: user-db
+    spec:
+      containers:
+        - name: user-db
+          image: postgres
+          envFrom:
+            - configMapRef:
+                name: postgres-user-config
+            - secretRef:
+                name: secret
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgres-user-data
+              mountPath: /data/postgres
+            - name: user-db-config
+              mountPath: /docker-entrypoint-initdb.d
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "pg_isready --dbname=users"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "pg_isready --dbname=users"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: postgres-user-data
+          persistentVolumeClaim:
+            claimName: user-db-pvc
+        - name: user-db-config
+          configMap:
+            name: user-config
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-db
+  namespace: kubernetes-microservices-task2
+spec:
+  selector:
+    app: user-db
+  ports:
+    - name: http
+      port: 5432
+      targetPort: 5432
+
+
+---
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: local-storage
+  namespace: kubernetes-microservices-task2
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: user-db-pv
+  namespace: kubernetes-microservices-task2
+spec:
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-storage
+  local:
+    path: /
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - minikube
+
+
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: user-db-pvc
+  namespace: kubernetes-microservices-task2
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-storage
+  resources:
+    requests:
+      storage: 1Gi
+

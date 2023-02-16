@@ -1,0 +1,7 @@
+CREATE TABLE IF NOT EXISTS users
+(
+    id        BIGSERIAL PRIMARY KEY,
+    user_name VARCHAR(255) NOT NULL,
+    amount    VARCHAR(255) NOT NULL
+);
+
