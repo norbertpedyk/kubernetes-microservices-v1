@@ -106,3 +106,30 @@ To Expose NodePorts services use:
   minikube service post --namespace=kubernetes-microservices-task2
 
 ```
+```bash
+helm create mychart
+```
+
+```bash
+helm package .  
+```
+
+```bash
+helm install mychartrelease ./mychart  
+```
+
+```bash
+helm uninstall mychartrelease ./mychart  
+```
+
+```bash
+helm package . mychartrelease ./mychart  
+```
+
+
+
+```bash
+helm install mychartrelease ./mychart --set userReplicas=2 --set postReplicas=2 --set namespace=kubernetes-microservices-task3
+```
+
+

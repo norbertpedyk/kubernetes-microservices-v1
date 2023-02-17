@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.userDbStatefulSetName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  serviceName: {{ .Values.userDbStatefulSetName }}
+  replicas: {{ .Values.userDbReplicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.userDbStatefulSetName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.userDbStatefulSetName }}
+    spec:
+      containers:
+        - name: {{ .Values.userDbStatefulSetName }}
+          image: {{ .Values.postgresImage }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.postgresUserConfigMapName }}
+            - secretRef:
+                name: {{ .Values.secretName }}
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgres-user-data
+              mountPath: /data/postgres
+            - name: user-db-config
+              mountPath: /docker-entrypoint-initdb.d
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "pg_isready --dbname=users"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "pg_isready --dbname=users"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: postgres-user-data
+          persistentVolumeClaim:
+            claimName: user-db-pvc
+        - name: user-db-config
+          configMap:
+            name: {{ .Values.userConfigMapName }}
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-user-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.storageSize }}
+        storageClassName: {{ .Values.userStorageClassName }}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.userDbStatefulSetName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.userDbStatefulSetName }}
+  ports:
+    - name: http
+      port: 5432
+      targetPort: 5432
+
+---
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.userStorageClassName }}
+  namespace: {{ .Values.namespace }}
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.userDbPersistentVolume.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  capacity:
+    storage: {{ .Values.userDbPersistentVolume.storageSize }}
+  accessModes:
+    - {{ .Values.userDbPersistentVolume.accessMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.userDbPersistentVolume.reclaimPolicy }}
+  storageClassName: {{ .Values.userStorageClassName }}
+  local:
+    path: {{ .Values.userDbPersistentVolume.localPath }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - {{ .Values.userDbPersistentVolume.node }}
+
+
+

@@ -1,0 +1,118 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ .Values.postDbStatefulSetName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  serviceName: {{ .Values.postDbStatefulSetName }}
+  replicas: {{ .Values.postDbReplicas }}
+  selector:
+    matchLabels:
+      app: {{ .Values.postDbStatefulSetName }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.postDbStatefulSetName }}
+    spec:
+      containers:
+        - name: {{ .Values.postDbStatefulSetName }}
+          image: {{ .Values.postgresImage }}
+          envFrom:
+            - configMapRef:
+                name: {{ .Values.postgresPostConfigMapName }}
+            - secretRef:
+                name: {{ .Values.secretName }}
+          ports:
+            - containerPort: 5432
+          volumeMounts:
+            - name: postgres-post-data
+              mountPath: /data/postgres
+            - name: post-db-config
+              mountPath: /docker-entrypoint-initdb.d
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "pg_isready --dbname=posts"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - "pg_isready --dbname=posts"
+            initialDelaySeconds: 10
+            timeoutSeconds: 5
+            periodSeconds: 10
+      volumes:
+        - name: postgres-post-data
+          persistentVolumeClaim:
+            claimName: post-db-pvc
+        - name: post-db-config
+          configMap:
+            name: {{ .Values.postConfigMapName }}
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-post-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: {{ .Values.storageSize }}
+        storageClassName: {{ .Values.postStorageClassName }}
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.postDbStatefulSetName }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    app: {{ .Values.postDbStatefulSetName }}
+  ports:
+    - name: http
+      port: 5433
+      targetPort: 5432
+
+---
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: {{ .Values.postStorageClassName }}
+  namespace: {{ .Values.namespace }}
+provisioner: kubernetes.io/no-provisioner
+volumeBindingMode: WaitForFirstConsumer
+
+---
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: {{ .Values.postDbPersistentVolume.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  capacity:
+    storage: {{ .Values.postDbPersistentVolume.storageSize }}
+  accessModes:
+    - {{ .Values.postDbPersistentVolume.accessMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.postDbPersistentVolume.reclaimPolicy }}
+  storageClassName: {{ .Values.postStorageClassName }}
+  local:
+    path: {{ .Values.postDbPersistentVolume.localPath }}
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - {{ .Values.postDbPersistentVolume.node }}
+
+
+
