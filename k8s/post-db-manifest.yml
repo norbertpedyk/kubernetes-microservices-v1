@@ -1,9 +1,10 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: post-db
   namespace: kubernetes-microservices-task2
 spec:
+  serviceName: post-db
   replicas: 1
   selector:
     matchLabels:
@@ -53,6 +54,15 @@ spec:
         - name: post-db-config
           configMap:
             name: post-config
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-post-data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: local-storage-post
+        resources:
+          requests:
+            storage: 1Gi
 
 ---
 
@@ -106,17 +116,3 @@ spec:
                 - minikube
 
 
----
-
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: post-db-pvc
-  namespace: kubernetes-microservices-task2
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-storage-post
-  resources:
-    requests:
-      storage: 1Gi

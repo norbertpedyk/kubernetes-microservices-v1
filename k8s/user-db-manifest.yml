@@ -1,9 +1,10 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
   name: user-db
   namespace: kubernetes-microservices-task2
 spec:
+  serviceName: user-db
   replicas: 1
   selector:
     matchLabels:
@@ -49,10 +50,19 @@ spec:
       volumes:
         - name: postgres-user-data
           persistentVolumeClaim:
-            claimName: user-db-pvc
+            claimName: user-db-pvc #or postgres-user-data
         - name: user-db-config
           configMap:
             name: user-config
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-user-data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: local-storage-user
 
 ---
 
@@ -75,7 +85,7 @@ spec:
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: local-storage
+  name: local-storage-user
   namespace: kubernetes-microservices-task2
 provisioner: kubernetes.io/no-provisioner
 volumeBindingMode: WaitForFirstConsumer
@@ -93,7 +103,7 @@ spec:
   accessModes:
     - ReadWriteOnce
   persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-storage
+  storageClassName: local-storage-user
   local:
     path: /
   nodeAffinity:
@@ -104,20 +114,3 @@ spec:
               operator: In
               values:
                 - minikube
-
-
----
-
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: user-db-pvc
-  namespace: kubernetes-microservices-task2
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-storage
-  resources:
-    requests:
-      storage: 1Gi
-
