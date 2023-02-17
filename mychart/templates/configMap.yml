@@ -3,6 +3,9 @@ kind: ConfigMap
 metadata:
   name: post-config
   namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "mychart.labels.current_date" . | nindent 4 }}
+    {{- include "mychart.labels.version" . | nindent 4 }}
 data:
   USER_SERVICE_URL: "http://user:8080/users/"
   DB_URL: "jdbc:postgresql://post-db:5433/posts"
@@ -47,6 +50,9 @@ kind: ConfigMap
 metadata:
   name: user-config
   namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "mychart.labels.current_date" . | nindent 4 }}
+    {{- include "mychart.labels.version" . | nindent 4 }}
 data:
   DB_URL: "jdbc:postgresql://user-db:5432/users"
   init.sql:
@@ -69,6 +75,9 @@ kind: ConfigMap
 metadata:
   name: postgres-user-config
   namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "mychart.labels.current_date" . | nindent 4 }}
+    {{- include "mychart.labels.version" . | nindent 4 }}
 data:
   POSTGRES_USER: pedyk
   POSTGRES_DB: users
@@ -81,6 +90,9 @@ kind: ConfigMap
 metadata:
   name: postgres-post-config
   namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "mychart.labels.current_date" . | nindent 4 }}
+    {{- include "mychart.labels.version" . | nindent 4 }}
 data:
   POSTGRES_USER: pedyk
   POSTGRES_DB: posts

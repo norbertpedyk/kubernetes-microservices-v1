@@ -5,6 +5,9 @@ Expand the name of the chart.
 {{- default .Chart.Name .Values.nameOverride | trunc 63 | trimSuffix "-" }}
 {{- end }}
 
+
+
+
 {{/*
 Create a default fully qualified app name.
 We truncate at 63 chars because some Kubernetes name fields are limited to this (by the DNS naming spec).
@@ -42,6 +45,7 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{- end }}
 
+
 {{/*
 Selector labels
 */}}
@@ -60,3 +64,19 @@ Create the name of the service account to use
 {{- default "default" .Values.serviceAccount.name }}
 {{- end }}
 {{- end }}
+
+
+{{/*
+custom labels
+*/}}
+{{- define "mychart.labels.current_date" -}}
+current_date: {{ now | date "2006-01-02" }}
+{{- end }}
+
+{{- define "mychart.labels.version" -}}
+version : {{ .Chart.Version }}
+{{- end }}
+
+
+
+

@@ -106,30 +106,39 @@ To Expose NodePorts services use:
   minikube service post --namespace=kubernetes-microservices-task2
 
 ```
+
+
+
+## helm config
+
+create helm chart directory
 ```bash
 helm create mychart
-```
 
+```
+create helm chart package
 ```bash
 helm package .  
 ```
 
+install chart with releasename
 ```bash
-helm install mychartrelease ./mychart  
+helm install mychartrelease .
 ```
 
+uninstall command
 ```bash
-helm uninstall mychartrelease ./mychart  
+helm uninstall mychartrelease . 
 ```
 
-```bash
-helm package . mychartrelease ./mychart  
-```
-
-
-
+running helm install with custom variables
 ```bash
 helm install mychartrelease ./mychart --set userReplicas=2 --set postReplicas=2 --set namespace=kubernetes-microservices-task3
+```
+
+to see whether configMap was labeled with correct labels
+```bash
+kubectl describe configmap post-config --namespace=kubernetes-microservices-task2 
 ```
 
 
